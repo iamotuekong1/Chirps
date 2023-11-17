@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Chirp;
+use App\Mail\MyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Mail;
 
 class ChirpController extends Controller
 {
@@ -33,16 +35,22 @@ class ChirpController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request): RedirectResponse
-    {
-        //
-        $validated = $request->validate([
-            'message' => 'required|string|max:255',
-        ]);
+{
+    $validated = $request->validate([
+        'message' => 'required|string|max:255',
+    ]);
 
-        $request->user()->chirps()->create($validated);
+    // Create a new chirp using the Chirp model
+    $newChirp = $request->user()->chirps()->create($validated);
 
-        return redirect(route('chirps.index'));
-    }
+    // Fetch the newly created chirp (if required)
+    $chirp = Chirp::findOrFail($newChirp->id);
+
+    // Send email using the retrieved chirp or $newChirp (if needed)
+    Mail::to($request->user())->send(new \App\Mail\MyEmail($chirp));
+
+    return redirect(route('chirps.index'));
+}
 
     /**
      * Display the specified resource.
